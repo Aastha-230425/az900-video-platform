@@ -10,7 +10,6 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
-// Native parser for Azure XML data formatting
 function parseAzureXml(xmlString) {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -27,10 +26,7 @@ function parseAzureXml(xmlString) {
       ? dateObj.toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' })
       : "Recent";
 
-    result.push({
-      name: name,
-      date: formattedDate
-    });
+    result.push({ name, date: formattedDate });
   }
   return result;
 }
@@ -41,12 +37,19 @@ function MyVideos() {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [streamingQuality, setStreamingQuality] = useState("1080p (Source)");
   const [isPaid, setIsPaid] = useState(false);
+  const [localViews, setLocalViews] = useState({});
 
   const storageAccountName = "videoplatformstore1";
   const containerName = "videos";
   const sasToken = "?sv=2026-02-06&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2027-07-10T05:01:27Z&st=2026-07-09T20:46:27Z&spr=https&sig=Rxoxp89OCTI5c6ylDEnmdWTtgC4cgdbcKyPV2Nd1%2F7w%3D";
 
   useEffect(() => {
+    // Load existing views from local storage database simulation
+    const savedViews = localStorage.getItem("azure_video_views");
+    if (savedViews) {
+      setLocalViews(JSON.parse(savedViews));
+    }
+
     const fetchVideosFromAzure = async () => {
       try {
         const listUrl = `https://${storageAccountName}.blob.core.windows.net/${containerName}${sasToken}&restype=container&comp=list`;
@@ -63,17 +66,29 @@ function MyVideos() {
     fetchVideosFromAzure();
   }, []);
 
-  const generateMockMetric = (name, factor, max) => {
+  const getViewsForVideo = (name) => {
+    if (localViews[name] !== undefined) {
+      return localViews[name];
+    }
+    // Base views calculation if never clicked before
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
       hash = name.charCodeAt(i) + ((hash << 5) - hash);
     }
-    return Math.abs(hash % max) * factor;
+    return (Math.abs(hash % 450) * 12) + 14;
   };
 
   const handleVideoSelect = (video) => {
     setSelectedVideo(video);
-    setIsPaid(false); // Reset payment view state for new video selection
+    setIsPaid(false);
+
+    // Dynamic Live Increment: simulate hitting Azure Function + Cosmos DB
+    const currentViews = getViewsForVideo(video.name);
+    const updatedViews = currentViews + 1;
+    
+    const newViewsObj = { ...localViews, [video.name]: updatedViews };
+    setLocalViews(newViewsObj);
+    localStorage.setItem("azure_video_views", JSON.stringify(newViewsObj));
   };
 
   const processMockPayment = () => {
@@ -86,7 +101,6 @@ function MyVideos() {
       <DashboardNavbar />
       <MDBox py={3}>
         <Grid container spacing={3}>
-          {/* LEFT COLUMN: Main List View */}
           <Grid item xs={12} lg={selectedVideo ? 7 : 12}>
             <Card>
               <MDBox mx={2} mt={-3} py={3} px={2} variant="gradient" color="white" bgColor="info" borderRadius="lg" shadow="sm">
@@ -105,11 +119,13 @@ function MyVideos() {
                           <th style={{ padding: "12px", borderBottom: "2px solid #f0f2f5" }}>VIDEO NAME</th>
                           <th style={{ padding: "12px", borderBottom: "2px solid #f0f2f5" }}>STATUS</th>
                           <th style={{ padding: "12px", borderBottom: "2px solid #f0f2f5" }}>VIEWS</th>
+                          <th style={{ padding: "12px", borderBottom: "2px solid #f0f2f5" }}>REVENUE</th>
                         </tr>
                       </thead>
                       <tbody>
                         {videos.map((video, index) => {
-                          const views = generateMockMetric(video.name, 12, 450) + 14;
+                          const views = getViewsForVideo(video.name);
+                          const revenue = (views * 0.08).toFixed(2);
                           return (
                             <tr key={index} style={{ cursor: "pointer", background: selectedVideo?.name === video.name ? "#f0f5ff" : "transparent" }} onClick={() => handleVideoSelect(video)}>
                               <td style={{ padding: "12px", borderBottom: "1px solid #f0f2f5" }}>
@@ -121,7 +137,10 @@ function MyVideos() {
                                 <MDTypography variant="caption" color="success" fontWeight="medium">Ready</MDTypography>
                               </td>
                               <td style={{ padding: "12px", borderBottom: "1px solid #f0f2f5" }}>
-                                <MDTypography variant="caption" color="text">{views.toLocaleString()}</MDTypography>
+                                <MDTypography variant="caption" color="text" fontWeight="bold">{views.toLocaleString()}</MDTypography>
+                              </td>
+                              <td style={{ padding: "12px", borderBottom: "1px solid #f0f2f5" }}>
+                                <MDTypography variant="caption" color="text">₹{revenue}</MDTypography>
                               </td>
                             </tr>
                           );
@@ -134,91 +153,43 @@ function MyVideos() {
             </Card>
           </Grid>
 
-          {/* RIGHT COLUMN: Interactive Requirement Sandbox Panel */}
           {selectedVideo && (
             <Grid item xs={12} lg={5}>
               <Card style={{ padding: "20px" }}>
-                <MDTypography variant="h5" fontWeight="bold" mb={1}>
-                  Management Console
-                </MDTypography>
-                <MDTypography variant="caption" color="text" display="block" mb={2}>
-                  Selected: <b>{selectedVideo.name}</b>
-                </MDTypography>
+                <MDTypography variant="h5" fontWeight="bold" mb={1}>Management Console</MDTypography>
+                <MDTypography variant="caption" color="text" display="block" mb={2}>Selected: <b>{selectedVideo.name}</b></MDTypography>
 
-                {/* 1. ADAPTIVE STREAMING ENGINE */}
                 <MDBox mb={3} p={2} style={{ background: "#f8f9fa", borderRadius: "8px" }}>
-                  <MDTypography variant="button" fontWeight="bold" color="info" display="block" mb={1}>
-                    🎛️ Adaptive Bitrate Engine (Azure Media Services)
-                  </MDTypography>
-                  <MDTypography variant="caption" color="text" display="block" mb={2}>
-                    Select bitrate profiles dynamically tailored to current client device performance:
-                  </MDTypography>
+                  <MDTypography variant="button" fontWeight="bold" color="info" display="block" mb={1}>🎛️ Adaptive Bitrate Engine (Azure Media Services)</MDTypography>
                   <div style={{ display: "flex", gap: "8px" }}>
                     {["1080p (Source)", "720p (HD)", "480p (SD)"].map((quality) => (
-                      <MDButton
-                        key={quality}
-                        variant={streamingQuality === quality ? "gradient" : "outlined"}
-                        color="info"
-                        size="small"
-                        onClick={() => setStreamingQuality(quality)}
-                      >
-                        {quality}
-                      </MDButton>
+                      <MDButton key={quality} variant={streamingQuality === quality ? "gradient" : "outlined"} color="info" size="small" onClick={() => setStreamingQuality(quality)}>{quality}</MDButton>
                     ))}
                   </div>
                 </MDBox>
 
-                {/* 2. LIVE HTML5 VIDEO PLAYER TERMINAL */}
-                <MDBox mb={3} style={{ textAlign: "center", background: "#000", borderRadius: "8px", overflow: "hidden", minHeight: "200px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <MDBox mb={3} style={{ textAlign: "center", background: "#000", borderRadius: "8px", overflow: "hidden" }}>
                   <video
                     key={`${selectedVideo.name}-${streamingQuality}`}
                     controls
+                    autoPlay
                     style={{ width: "100%", maxHeight: "240px", display: "block" }}
                     src={`https://${storageAccountName}.blob.core.windows.net/${containerName}/${encodeURIComponent(selectedVideo.name)}${sasToken}`}
                   />
                 </MDBox>
 
-                {/* 3. COGNITIVE SERVICES AI VISION ENGINE */}
                 <MDBox mb={3} p={2} style={{ borderLeft: "4px solid #4CAF50", background: "#f4fcf6", borderRadius: "0 8px 8px 0" }}>
-                  <MDTypography variant="button" fontWeight="bold" color="success" display="block" mb={1}>
-                    🤖 Automated AI Content Moderation (Azure AI Vision)
-                  </MDTypography>
-                  <Grid container spacing={1}>
-                    <Grid item xs={6}>
-                      <MDTypography variant="caption" color="text" display="block">Safety Check: <b>PASS ✅</b></MDTypography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <MDTypography variant="caption" color="text" display="block">SFW Rating: <b>99.8%</b></MDTypography>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <MDTypography variant="caption" color="text" display="block">Copyright Analysis: <b>No Infringements Detected</b></MDTypography>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <MDTypography variant="caption" style={{ color: "#388e3c", fontStyle: "italic" }} display="block" mt={1}>
-                        *Thumbnails generated instantly via integrated Azure Functions.
-                      </MDTypography>
-                    </Grid>
-                  </Grid>
+                  <MDTypography variant="button" fontWeight="bold" color="success" display="block" mb={1}>🤖 Automated AI Content Moderation (Azure AI Vision)</MDTypography>
+                  <MDTypography variant="caption" color="text" display="block">Safety Check: <b>PASS ✅</b> | SFW: <b>99.8%</b></MDTypography>
+                  <MDTypography variant="caption" style={{ color: "#388e3c", fontStyle: "italic" }} display="block" mt={1}>*Thumbnails generated instantly via integrated Azure Functions.</MDTypography>
                 </MDBox>
 
-                {/* 4. MONETIZATION GATEWAY CHECKOUT */}
                 <MDBox p={2} style={{ background: "#fff9e6", border: "1px dashed #ffb300", borderRadius: "8px" }}>
-                  <MDTypography variant="button" fontWeight="bold" style={{ color: "#b78103" }} display="block" mb={1}>
-                    💎 Monetization & Payment Gateway Integration
-                  </MDTypography>
+                  <MDTypography variant="button" fontWeight="bold" style={{ color: "#b78103" }} display="block" mb={1}>💎 Monetization & Payment Gateway Integration</MDTypography>
                   {isPaid ? (
-                    <MDTypography variant="caption" color="success" fontWeight="bold" display="block">
-                      ✓ Premium Monetized Tier Unlocked! Premium Ad-Free Access Active.
-                    </MDTypography>
+                    <MDTypography variant="caption" color="success" fontWeight="bold" display="block">✓ Premium Monetized Tier Unlocked!</MDTypography>
                   ) : (
-                    <>
-                      <MDTypography variant="caption" color="text" display="block" mb={2}>
-                        This video is under a Pay-Per-View Premium Tier. Test the gateway below:
-                      </MDTypography>
-                      <MDButton variant="gradient" color="warning" fullWidth onClick={processMockPayment}>
-                        Unlock Premium Access (₹10.00)
-                      </MDButton>
-                    </>
+                    <MDButton variant="gradient" color="warning" fullWidth onClick={processMockPayment}>Unlock Premium Access (₹10.00)</MDButton>
                   )}
                 </MDBox>
               </Card>
