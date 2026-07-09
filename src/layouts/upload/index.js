@@ -33,34 +33,38 @@ function Upload() {
       return;
     }
 
-    setUploadStatus("Uploading to Azure...");
+    setUploadStatus("Uploading directly to Azure Blob Storage...");
 
     try {
       const fileInput = document.querySelector('input[type="file"]');
       const file = fileInput.files[0];
 
-      const formData = new FormData();
-      formData.append("video", file);
-      formData.append("title", title);
-      formData.append("description", description);
+      // Direct Upload to your identified Azure Storage account container
+      const storageAccountName = "videoplatformstore1";
+      const containerName = "videos";
+      
+      // Public SAS token placeholder (fallback if not using a backend token generator)
+      const sasToken = ""; 
 
-      // Uses the Vercel environment variable, falls back to your Function App domain
-      const apiUrl = process.env.REACT_APP_API_URL || "https://videoplatformfunc1.azurewebsites.net";
+      const uploadUrl = `https://${storageAccountName}.blob.core.windows.net/${containerName}/${encodeURIComponent(file.name)}${sasToken}`;
 
-      // Note: Adjust the endpoint path '/api/upload' if your friend named the function route differently
-      const response = await fetch(`${apiUrl}/api/upload`, {
-        method: "POST",
-        body: formData,
+      const response = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "x-ms-blob-type": "BlockBlob",
+          "Content-Type": file.type,
+        },
+        body: file,
       });
 
       if (response.ok) {
-        setUploadStatus(`"${title}" uploaded successfully to Azure!`);
+        setUploadStatus(`"${title}" uploaded successfully directly to Azure!`);
       } else {
-        setUploadStatus("Upload failed on the server. Check backend logs.");
+        setUploadStatus(`Upload failed with status: ${response.status}. Ensure CORS is enabled on the Storage Account.`);
       }
     } catch (error) {
       console.error(error);
-      setUploadStatus("Network error: Could not reach the Azure backend.");
+      setUploadStatus("Network error: Could not complete the direct upload.");
     }
   };
 
