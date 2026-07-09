@@ -1,10 +1,16 @@
 import { useState } from "react";
+
+// @mui material components
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
+
+// Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDButton from "components/MDButton";
 import MDInput from "components/MDInput";
+
+// Material Dashboard 2 React example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
@@ -22,7 +28,7 @@ function Upload() {
   };
 
   const handleUpload = async (e) => {
-    // Prevent any automatic form handling redirects
+    // Prevent default form submission or page reloads
     if (e) e.preventDefault();
 
     if (!file || !title) {
@@ -30,14 +36,17 @@ function Upload() {
       return;
     }
 
-    setUploadStatus("Uploading file directly to Azure...");
+    setUploadStatus("Uploading file securely directly to Azure...");
 
     try {
       const storageAccountName = "videoplatformstore1";
       const containerName = "videos";
       
-      // Direct destination URL construction
-      const uploadUrl = `https://${storageAccountName}.blob.core.windows.net/${containerName}/${encodeURIComponent(file.name)}`;
+      // Your verified Azure Storage Shared Access Signature token
+      const sasToken = "?sv=2026-02-06&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2027-07-10T05:01:27Z&st=2026-07-09T20:46:27Z&spr=https&sig=Rxoxp89OCTI5c6ylDEnmdWTtgC4cgdbcKyPV2Nd1%2F7w%3D";
+
+      // Construct the absolute authenticated URL path
+      const uploadUrl = `https://${storageAccountName}.blob.core.windows.net/${containerName}/${encodeURIComponent(file.name)}${sasToken}`;
 
       const response = await fetch(uploadUrl, {
         method: "PUT",
@@ -51,11 +60,11 @@ function Upload() {
       if (response.ok) {
         setUploadStatus(`Success! "${title}" has been uploaded directly to Azure.`);
       } else {
-        setUploadStatus(`Upload failed (Status ${response.status}). Check Azure CORS rules.`);
+        setUploadStatus(`Upload failed (Status ${response.status}). Verify your Azure CORS rules.`);
       }
     } catch (error) {
       console.error("Direct upload error:", error);
-      setUploadStatus("Network error: Verification failed. Ensure Azure CORS rules are saved.");
+      setUploadStatus("Network error: Could not complete the direct upload.");
     }
   };
 
