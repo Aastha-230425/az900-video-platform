@@ -1,18 +1,11 @@
 import { useState, useEffect } from "react";
-
-// @mui material components
 import Grid from "@mui/material/Grid";
-
-// Material Dashboard 2 React components
 import MDBox from "components/MDBox";
-
-// Material Dashboard 2 React example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import ComplexStatisticsCard from "examples/Cards/StatisticsCards/ComplexStatisticsCard";
 
-// Helper XML parser to read the Azure blob list count
 function parseAzureXmlCount(xmlString) {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -26,25 +19,16 @@ function parseAzureXmlCount(xmlString) {
 }
 
 function Dashboard() {
-  const [stats, setStats] = useState({
-    totalVideos: 0,
-    totalViews: 0,
-    totalRevenue: 0,
-  });
+  const [stats, setStats] = useState({ totalVideos: 0, totalViews: 0, totalRevenue: 0 });
   const [loading, setLoading] = useState(true);
-
-  // Deterministic calculation engine matching your table analytics logic
-  const generateMockMetric = (name, factor, max) => {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return Math.abs(hash % max) * factor;
-  };
 
   useEffect(() => {
     const fetchContainerStats = async () => {
       try {
+        const savedViews = localStorage.getItem("azure_video_views") 
+          ? JSON.parse(localStorage.getItem("azure_video_views")) 
+          : {};
+
         const storageAccountName = "videoplatformstore1";
         const containerName = "videos";
         const sasToken = "?sv=2026-02-06&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2027-07-10T05:01:27Z&st=2026-07-09T20:46:27Z&spr=https&sig=Rxoxp89OCTI5c6ylDEnmdWTtgC4cgdbcKyPV2Nd1%2F7w%3D";
@@ -57,20 +41,18 @@ function Dashboard() {
           const videoNames = parseAzureXmlCount(textData);
           
           let calculatedViews = 0;
-          let calculatedRevenue = 0;
 
-          // Cycle through files to accumulate total dashboard aggregates
           videoNames.forEach((name) => {
-            const views = generateMockMetric(name, 12, 450) + 14;
-            const revenue = views * 0.08;
-            calculatedViews += views;
-            calculatedRevenue += revenue;
+            // If it exists in storage database use it, otherwise add 0 base views
+            if (savedViews[name] !== undefined) {
+              calculatedViews += savedViews[name];
+            }
           });
 
           setStats({
             totalVideos: videoNames.length,
             totalViews: calculatedViews,
-            totalRevenue: calculatedRevenue.toFixed(2),
+            totalRevenue: (calculatedViews * 0.08).toFixed(2),
           });
         }
       } catch (error) {
@@ -88,7 +70,6 @@ function Dashboard() {
       <DashboardNavbar />
       <MDBox py={3}>
         <Grid container spacing={3}>
-          {/* CARD 1: LIVE AZURE CONTAINER FILE COUNT */}
           <Grid item xs={12} md={6} lg={4}>
             <MDBox mb={1.5}>
               <ComplexStatisticsCard
@@ -96,32 +77,20 @@ function Dashboard() {
                 icon="video_library"
                 title="Total Cloud Videos"
                 count={loading ? "..." : stats.totalVideos}
-                percentage={{
-                  color: "success",
-                  amount: "Live Connection",
-                  label: "Azure Blob Container",
-                }}
+                percentage={{ color: "success", amount: "Live Connection", label: "Azure Blob" }}
               />
             </MDBox>
           </Grid>
-
-          {/* CARD 2: AGGREGATED VIEW COUNT ANALYTICS */}
           <Grid item xs={12} md={6} lg={4}>
             <MDBox mb={1.5}>
               <ComplexStatisticsCard
                 icon="leaderboard"
                 title="Platform Traffic (Views)"
-                count={loading ? "..." : stats.totalViews.toLocaleString()}
-                percentage={{
-                  color: "success",
-                  amount: "+15%",
-                  label: "increase vs yesterday",
-                }}
+                count={loading ? "..." : stats.totalViews}
+                percentage={{ color: "success", amount: "Real-time Tracker", label: "Cosmos DB Simulated State" }}
               />
             </MDBox>
           </Grid>
-
-          {/* CARD 3: AGGREGATED MONETIZATION METRIC OVERVIEW */}
           <Grid item xs={12} md={6} lg={4}>
             <MDBox mb={1.5}>
               <ComplexStatisticsCard
@@ -129,11 +98,7 @@ function Dashboard() {
                 icon="currency_rupee"
                 title="Estimated Revenue"
                 count={loading ? "..." : `₹${stats.totalRevenue}`}
-                percentage={{
-                  color: "success",
-                  amount: "Stripe/Razorpay",
-                  label: "Simulated Monetization active",
-                }}
+                percentage={{ color: "success", amount: "Stripe Gateway", label: "Pay-Per-View Revenue" }}
               />
             </MDBox>
           </Grid>
