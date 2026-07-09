@@ -31,17 +31,6 @@ function Footer({ company, links }) {
   const { href, name } = company;
   const { size } = typography;
 
-  const renderLinks = () =>
-    links.map((link) => (
-      <MDBox key={link.name} component="li" px={2} lineHeight={1}>
-        <Link href={link.href} target="_blank">
-          <MDTypography variant="button" fontWeight="regular" color="text">
-            {link.name}
-          </MDTypography>
-        </Link>
-      </MDBox>
-    ));
-
   return (
     <MDBox
       width="100%"
@@ -60,38 +49,30 @@ function Footer({ company, links }) {
         fontSize={size.sm}
         px={1.5}
       >
-        &copy; {new Date().getFullYear()}, made with
-        <MDBox fontSize={size.md} color="text" mb={-0.5} mx={0.25}>
-          <Icon color="inherit" fontSize="inherit">
-            favorite
-          </Icon>
-        </MDBox>
-        by
-        <Link href={href} target="_blank">
-          <MDTypography variant="button" fontWeight="medium">
-            &nbsp;{name}&nbsp;
-          </MDTypography>
-        </Link>
-        for a better web.
+        &copy; {new Date().getFullYear()}, Video Platform Application Portfolio
       </MDBox>
       <MDBox
         component="ul"
+        display="flex"
+        flexWrap="wrap"
+        alignItems="center"
+        p={0}
+        m={0}
         sx={({ breakpoints }) => ({
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          justifyContent: "center",
-          listStyle: "none",
-          mt: 3,
-          mb: 0,
-          p: 0,
-
-          [breakpoints.up("lg")]: {
-            mt: 0,
+          [breakpoints.down("lg")]: {
+            mt: 3,
           },
         })}
       >
-        {renderLinks()}
+        {links.map((link) => (
+          <MDBox component="li" key={link.name} px={2} lineHeight={1}>
+            <Link href={link.href} target="_blank">
+              <MDTypography variant="button" fontWeight="regular" color="text">
+                {link.name}
+              </MDTypography>
+            </Link>
+          </MDBox>
+        ))}
       </MDBox>
     </MDBox>
   );
