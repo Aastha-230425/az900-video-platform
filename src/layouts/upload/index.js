@@ -27,13 +27,41 @@ function Upload() {
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!fileName || !title) {
       setUploadStatus("Please select a file and enter a title.");
       return;
     }
-    // This is where the Azure Blob Storage upload call will go tomorrow
-    setUploadStatus(`"${title}" is ready to upload to Azure Blob Storage.`);
+
+    setUploadStatus("Uploading to Azure...");
+
+    try {
+      const fileInput = document.querySelector('input[type="file"]');
+      const file = fileInput.files[0];
+
+      const formData = new FormData();
+      formData.append("video", file);
+      formData.append("title", title);
+      formData.append("description", description);
+
+      // Uses the Vercel environment variable, falls back to your Function App domain
+      const apiUrl = process.env.REACT_APP_API_URL || "https://videoplatformfunc1.azurewebsites.net";
+
+      // Note: Adjust the endpoint path '/api/upload' if your friend named the function route differently
+      const response = await fetch(`${apiUrl}/api/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        setUploadStatus(`"${title}" uploaded successfully to Azure!`);
+      } else {
+        setUploadStatus("Upload failed on the server. Check backend logs.");
+      }
+    } catch (error) {
+      console.error(error);
+      setUploadStatus("Network error: Could not reach the Azure backend.");
+    }
   };
 
   return (
