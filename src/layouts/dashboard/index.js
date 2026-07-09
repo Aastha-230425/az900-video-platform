@@ -38,7 +38,7 @@ function Dashboard() {
               <ComplexStatisticsCard
                 color="info"
                 icon="visibility"
-                title="Total Views"
+                title="Views"
                 count="0"
                 percentage={{
                   color: "info",
@@ -68,14 +68,14 @@ function Dashboard() {
           <Grid item xs={12} md={6} lg={3}>
             <MDBox mb={1.5}>
               <ComplexStatisticsCard
-                color="warning"
-                icon="smart_toy"
-                title="AI Status"
-                count="Pending"
+                color="primary"
+                icon="person"
+                title="Subscribers"
+                count="0"
                 percentage={{
-                  color: "warning",
+                  color: "info",
                   amount: "",
-                  label: "Moderation not started",
+                  label: "Waiting for Azure data",
                 }}
               />
             </MDBox>
@@ -89,3 +89,4 @@ function Dashboard() {
 }
 
 export default Dashboard;
+         
