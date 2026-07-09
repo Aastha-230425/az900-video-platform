@@ -1,70 +1,61 @@
 import { useState } from "react";
-
-// @mui material components
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
-
-// Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDButton from "components/MDButton";
 import MDInput from "components/MDInput";
-
-// Material Dashboard 2 React example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
 function Upload() {
-  const [fileName, setFileName] = useState("");
+  const [file, setFile] = useState(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [uploadStatus, setUploadStatus] = useState("");
 
   const handleFileChange = (e) => {
     if (e.target.files.length > 0) {
-      setFileName(e.target.files[0].name);
+      setFile(e.target.files[0]);
     }
   };
 
-  const handleUpload = async () => {
-    if (!fileName || !title) {
+  const handleUpload = async (e) => {
+    // Prevent any automatic form handling redirects
+    if (e) e.preventDefault();
+
+    if (!file || !title) {
       setUploadStatus("Please select a file and enter a title.");
       return;
     }
 
-    setUploadStatus("Uploading directly to Azure Blob Storage...");
+    setUploadStatus("Uploading file directly to Azure...");
 
     try {
-      const fileInput = document.querySelector('input[type="file"]');
-      const file = fileInput.files[0];
-
-      // Direct Upload to your identified Azure Storage account container
       const storageAccountName = "videoplatformstore1";
       const containerName = "videos";
       
-      // Public SAS token placeholder (fallback if not using a backend token generator)
-      const sasToken = ""; 
-
-      const uploadUrl = `https://${storageAccountName}.blob.core.windows.net/${containerName}/${encodeURIComponent(file.name)}${sasToken}`;
+      // Direct destination URL construction
+      const uploadUrl = `https://${storageAccountName}.blob.core.windows.net/${containerName}/${encodeURIComponent(file.name)}`;
 
       const response = await fetch(uploadUrl, {
         method: "PUT",
         headers: {
           "x-ms-blob-type": "BlockBlob",
-          "Content-Type": file.type,
+          "Content-Type": file.type || "video/mp4",
         },
         body: file,
       });
 
       if (response.ok) {
-        setUploadStatus(`"${title}" uploaded successfully directly to Azure!`);
+        setUploadStatus(`Success! "${title}" has been uploaded directly to Azure.`);
       } else {
-        setUploadStatus(`Upload failed with status: ${response.status}. Ensure CORS is enabled on the Storage Account.`);
+        setUploadStatus(`Upload failed (Status ${response.status}). Check Azure CORS rules.`);
       }
     } catch (error) {
-      console.error(error);
-      setUploadStatus("Network error: Could not complete the direct upload.");
+      console.error("Direct upload error:", error);
+      setUploadStatus("Network error: Verification failed. Ensure Azure CORS rules are saved.");
     }
   };
 
@@ -75,7 +66,7 @@ function Upload() {
         <Grid container spacing={3} justifyContent="center">
           <Grid item xs={12} md={8} lg={6}>
             <Card>
-              <MDBox p={3}>
+              <MDBox p={3} component="form" onSubmit={handleUpload}>
                 <MDTypography variant="h5" fontWeight="medium" mb={2}>
                   Upload Video
                 </MDTypography>
@@ -87,9 +78,9 @@ function Upload() {
                   <MDBox mt={1}>
                     <input type="file" accept="video/*" onChange={handleFileChange} />
                   </MDBox>
-                  {fileName && (
+                  {file && (
                     <MDTypography variant="caption" color="success">
-                      Selected: {fileName}
+                      Selected: {file.name}
                     </MDTypography>
                   )}
                 </MDBox>
@@ -114,7 +105,7 @@ function Upload() {
                   />
                 </MDBox>
 
-                <MDButton variant="gradient" color="info" onClick={handleUpload} fullWidth>
+                <MDButton variant="gradient" color="info" type="submit" fullWidth>
                   Upload to Azure Blob Storage
                 </MDButton>
 
