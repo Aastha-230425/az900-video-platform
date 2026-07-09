@@ -44,7 +44,6 @@ function MyVideos() {
   const sasToken = "?sv=2026-02-06&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2027-07-10T05:01:27Z&st=2026-07-09T20:46:27Z&spr=https&sig=Rxoxp89OCTI5c6ylDEnmdWTtgC4cgdbcKyPV2Nd1%2F7w%3D";
 
   useEffect(() => {
-    // Load existing views from local storage database simulation
     const savedViews = localStorage.getItem("azure_video_views");
     if (savedViews) {
       setLocalViews(JSON.parse(savedViews));
@@ -66,23 +65,15 @@ function MyVideos() {
     fetchVideosFromAzure();
   }, []);
 
+  // Hard set starting point to 0 if never clicked before
   const getViewsForVideo = (name) => {
-    if (localViews[name] !== undefined) {
-      return localViews[name];
-    }
-    // Base views calculation if never clicked before
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return (Math.abs(hash % 450) * 12) + 14;
+    return localViews[name] !== undefined ? localViews[name] : 0;
   };
 
   const handleVideoSelect = (video) => {
     setSelectedVideo(video);
     setIsPaid(false);
 
-    // Dynamic Live Increment: simulate hitting Azure Function + Cosmos DB
     const currentViews = getViewsForVideo(video.name);
     const updatedViews = currentViews + 1;
     
@@ -137,10 +128,10 @@ function MyVideos() {
                                 <MDTypography variant="caption" color="success" fontWeight="medium">Ready</MDTypography>
                               </td>
                               <td style={{ padding: "12px", borderBottom: "1px solid #f0f2f5" }}>
-                                <MDTypography variant="caption" color="text" fontWeight="bold">{views.toLocaleString()}</MDTypography>
+                                <MDTypography variant="button" color="text" fontWeight="bold">{views}</MDTypography>
                               </td>
                               <td style={{ padding: "12px", borderBottom: "1px solid #f0f2f5" }}>
-                                <MDTypography variant="caption" color="text">₹{revenue}</MDTypography>
+                                <MDTypography variant="caption" color="text" fontWeight="bold">₹{revenue}</MDTypography>
                               </td>
                             </tr>
                           );
